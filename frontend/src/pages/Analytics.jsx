@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, AlertTriangle } from 'lucide-react';
+import { apiFetch } from '../lib/api';
 
 const Analytics = () => {
   const [insights, setInsights] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/insights')
-      .then(res => res.json())
-      .then(data => setInsights(data))
-      .catch(err => console.error(err));
+    apiFetch('/insights')
+      .then((res) => res.json())
+      .then((data) => setInsights(data))
+      .catch((err) => console.error(err));
   }, []);
 
   return (

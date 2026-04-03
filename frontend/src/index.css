@@ -4,7 +4,11 @@
 
 @layer utilities {
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-start to-primary-end;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-fuchsia-500;
+  }
+
+  .mirror-x {
+    transform: scaleX(-1);
   }
 }
 
