@@ -745,4 +745,72 @@ router.get('/insights', async (_req, res) => {
   });
 });
 
+// --- MANUAL ATTENDANCE ROUTES ---
+router.post('/attendance', async (req, res) => {
+  try {
+    const { classId, date, lectureNumber, subject, records } = req.body;
+    if (!classId || !subject) return res.status(400).json({ error: 'Class and Subject are required.' });
+    
+    const selectedDate = new Date(date || Date.now());
+    const dateStart = new Date(selectedDate); dateStart.setHours(0,0,0,0);
+    const dateEnd = new Date(selectedDate); dateEnd.setHours(23,59,59,999);
+    
+    const existing = await Attendance.findOne({
+      classId,
+      subject,
+      date: { $gte: dateStart, $lte: dateEnd }
+    });
+    
+    if (existing) {
+      return res.status(400).json({ error: 'Attendance already recorded for this subject on this date.' });
+    }
+    
+    const att = new Attendance({ classId, date: selectedDate, lectureNumber: lectureNumber || 1, subject, records });
+    await att.save();
+    res.status(201).json(att);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/attendance', async (req, res) => {
+  try {
+    const { classId, subject, date } = req.query;
+    let filter = {};
+    if (classId) filter.classId = classId;
+    if (subject) filter.subject = subject;
+    if (date) {
+      const selectedDate = new Date(date);
+      const dateStart = new Date(selectedDate); dateStart.setHours(0,0,0,0);
+      const dateEnd = new Date(selectedDate); dateEnd.setHours(23,59,59,999);
+      filter.date = { $gte: dateStart, $lte: dateEnd };
+    }
+    
+    const records = await Attendance.find(filter)
+      .populate('classId', 'className courseName')
+      .populate('records.student', 'name rollNumber registrationId')
+      .sort({ date: -1 })
+      .limit(50);
+      
+    res.json(records);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/attendance/:id', async (req, res) => {
+  try {
+    const { records } = req.body;
+    const att = await Attendance.findById(req.params.id);
+    if (!att) return res.status(404).json({ error: 'Record not found' });
+    
+    if (records) att.records = records;
+    await att.save();
+    res.json(att);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
